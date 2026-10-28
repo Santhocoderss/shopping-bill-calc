@@ -1,19 +1,52 @@
+from flask import Flask, request, redirect, url_for, render_template_string
+
+app = Flask(__name__)
+bills = []
+
+PAGE = """
+<!doctype html>
+<html>
+<head><title>Shopping Bill Calculator</title></head>
+<body>
+<h1>Shopping Bill Calculator</h1>
+<form method="post" action="/calculate">
+<input type="number" step="0.01" name="price" placeholder="Item Price" required>
+<input type="number" name="quantity" placeholder="Quantity" required>
+<button type="submit">Calculate Bill</button>
+</form>
+<h2>Recent Calculations</h2>
+<ul>
+{% for bill in bills %}
+<li>Price: ${{ bill.price }} x Qty: {{ bill.quantity }} = <strong>Total: ${{ bill.total }}</strong></li>
+{% else %}
+<li>No calculations performed yet.</li>
+{% endfor %}
+</ul>
+</body>
+</html>
+"""
+
 def calculate_total(price, quantity):
     if price < 0 or quantity < 0:
         raise ValueError("Price and quantity must be positive numbers.")
     return round(price * quantity, 2)
 
-def menu():
-    print("\n--- Shopping Bill Calculator ---")
+@app.get("/")
+def home():
+    return render_template_string(PAGE, bills=bills)
+
+@app.post("/calculate")
+def handle_calculate():
     try:
-        price = float(input("Enter item price: "))
-        quantity = int(input("Enter item quantity: "))
+        price = float(request.form.get("price", 0))
+        quantity = int(request.form.get("quantity", 0))
         total = calculate_total(price, quantity)
-        print(f"Total Bill Amount: ${total}")
-    except ValueError as e:
-        print(f"Invalid input: {e}")
+        bills.append({"price": price, "quantity": quantity, "total": total})
+    except ValueError:
+        pass
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    menu()
+    app.run(host="0.0.0.0", port=5000)
 
 
